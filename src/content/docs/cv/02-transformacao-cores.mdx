@@ -1,0 +1,306 @@
+---
+sidebar:
+  order: 2
+slug: cv-transformacao-cores
+title: Transformação e espaços de cor
+---
+
+# Transformação e espaços de cor
+
+## 1. Representação de imagens
+
+### 1.1 Escala de cinza vs RGB
+
+* **Escala de cinza** usa um único valor por pixel para representar a intensidade. É ideal para operações que dependem apenas de brilho.
+* **RGB** usa três valores por pixel para representar cor: vermelho, verde e azul.
+
+Exemplo em Python sem bibliotecas:
+
+```python
+# Imagem em escala de cinza 2x2
+gray = [
+    [50, 100],
+    [150, 200]
+]
+
+# Imagem RGB 2x2
+rgb = [
+    [[255, 0, 0], [0, 255, 0]],
+    [[0, 0, 255], [255, 255, 0]]
+]
+
+# Acessar o pixel (1, 0) em RGB
+pixel = rgb[1][0]  # [0, 0, 255]
+```
+
+
+
+## 2. RGB – Red, Green, Blue
+
+O espaço **RGB** é o mais comum em imagens digitais. Cada pixel é descrito por três canais independentes: intensidade de vermelho, verde e azul.
+
+### 2.1 Exemplo de imagem RGB
+
+```
+Pixel (0, 0): [255,   0,   0]  → Vermelho puro
+Pixel (0, 1): [  0, 255,   0]  → Verde puro
+Pixel (0, 2): [  0,   0, 255]  → Azul puro
+Pixel (0, 3): [128, 128, 128]  → Cinza neutro
+```
+
+### 2.2 Conversão manual para escala de cinza
+
+```python
+pixel = [100, 200, 50]
+
+# Média simples
+gray_mean = int((pixel[0] + pixel[1] + pixel[2]) / 3)
+
+# Luminância BT.601
+gray_bt601 = int(0.299 * pixel[0] + 0.587 * pixel[1] + 0.114 * pixel[2])
+
+print(gray_mean, gray_bt601)
+```
+
+## 3. HSV – Hue, Saturation, Value
+
+**HSV** desacopla a cor (Hue) da intensidade (Value) e da "pureza" da cor (Saturation). É muito mais intuitivo para humanos.
+
+### 3.1 Componentes
+
+* **Hue (Matiz)** – ângulo em [0°, 360°] ou [0, 180] em OpenCV
+  - 0° = Vermelho
+  - 60° = Amarelo
+  - 120° = Verde
+  - 180° = Ciano
+  - 240° = Azul
+  - 300° = Magenta
+
+* **Saturation (Saturação)** – intensidade da cor
+  - 0 = cinza
+  - 1 = cor pura
+
+* **Value (Valor/Brilho)** – intensidade do brilho
+  - 0 = preto
+  - 1 = brilho máximo
+
+### 3.2 Conversão manual RGB → HSV
+
+```python
+import math
+
+r, g, b = 100 / 255.0, 200 / 255.0, 50 / 255.0
+cmax = max(r, g, b)
+cmin = min(r, g, b)
+delta = cmax - cmin
+
+# Value
+v = cmax
+
+# Saturação
+s = 0 if cmax == 0 else delta / cmax
+
+# Hue
+if delta == 0:
+    h = 0
+elif cmax == r:
+    h = 60 * (((g - b) / delta) % 6)
+elif cmax == g:
+    h = 60 * (((b - r) / delta) + 2)
+else:
+    h = 60 * (((r - g) / delta) + 4)
+
+print(f"HSV = ({h:.1f}, {s:.2f}, {v:.2f})")
+```
+
+### 3.3 Conversão manual HSV → RGB
+
+```python
+c = v * s
+x = c * (1 - abs(((h / 60) % 2) - 1))
+m = v - c
+
+if 0 <= h < 60:
+    rp, gp, bp = c, x, 0
+elif 60 <= h < 120:
+    rp, gp, bp = x, c, 0
+elif 120 <= h < 180:
+    rp, gp, bp = 0, c, x
+elif 180 <= h < 240:
+    rp, gp, bp = 0, x, c
+elif 240 <= h < 300:
+    rp, gp, bp = x, 0, c
+else:
+    rp, gp, bp = c, 0, x
+
+r = int((rp + m) * 255)
+g = int((gp + m) * 255)
+b = int((bp + m) * 255)
+print(f"RGB = ({r}, {g}, {b})")
+```
+
+## 4. Espaços de cor adicionais
+
+### 4.1 YCbCr
+
+Usado em compressão JPEG e vídeo. Separa luminância (Y) de crominância (Cb, Cr).
+
+* **Y** – luminância (o que o olho humano mais enxerga)
+* **Cb** – diferença de azul
+* **Cr** – diferença de vermelho
+
+### 4.2 LAB
+
+Espaço perceptual proposto por CIE em 1976.
+
+* **L** – luminância [0, 100]
+* **a** – eixo verde-magenta
+* **b** – eixo azul-amarelo
+
+Excelente para processamento porque distâncias euclidianas em LAB correspondem bem a diferenças visuais humanas.
+
+:::tip Exercício 1: Converter RGB para cinza sem bibliotecas
+Escreva uma função que converta cada pixel RGB para escala de cinza usando BT.601 e aplique-a a uma imagem representada por listas.
+
+```python
+image_rgb = [
+    [[255, 0, 0], [0, 255, 0]],
+    [[0, 0, 255], [255, 255, 0]]
+]
+
+def rgb_to_gray(pixel):
+    r, g, b = pixel
+    return int(0.299 * r + 0.587 * g + 0.114 * b)
+
+image_gray = [
+    [rgb_to_gray(pixel) for pixel in row]
+    for row in image_rgb
+]
+
+print(image_gray)
+```
+:::
+
+:::tip Exercício 2: Converter RGB para HSV sem bibliotecas
+Implemente a conversão manual para HSV e teste com alguns pixels.
+
+```python
+pixel = [100, 200, 50]
+# Use a fórmula mostrada no capítulo para obter H, S e V.
+```
+:::
+
+:::tip Exercício 3: Normalizar imagem float/uint8
+Escreva funções que normalizam valores de pixels para [0, 1] e depois reconvertem para uint8.
+
+```python
+pixel = 128
+
+# Normalizar
+normalized = pixel / 255.0
+
+# Reconverter
+recovered = int(normalized * 255)
+```
+:::
+
+## 4. Outros espaços úteis
+
+### 4.1 YCbCr
+
+Usado em compressão JPEG e vídeo. Separa luminância (Y) de crominância (Cb, Cr).
+
+* **Y** – luminância (o que o olho humano mais enxerga)
+* **Cb** – diferença de azul
+* **Cr** – diferença de vermelho
+
+Vantagem: permite comprimir Cb/Cr com menos resolução sem perda visual significativa.
+
+### 4.2 LAB
+
+Espaço perceptual proposto por CIE em 1976.
+
+* **L** – luminância [0, 100]
+* **a** – eixo verde-magenta
+* **b** – eixo azul-amarelo
+
+Excelente para processamento porque distâncias euclidianas em LAB correspondem bem a diferenças visuais humanas.
+
+
+:::tip Exercício 1: Filtrar por cor
+Segmente a imagem para encontrar apenas pixels de uma cor específica (ex: objetos vermelhos).
+
+```python
+import cv2
+import numpy as np
+
+img = cv2.imread('sua_imagem.jpg')
+hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+# Definir intervalo de vermelho (em HSV)
+lower_red = np.array([0, 100, 100])
+upper_red = np.array([10, 255, 255])
+
+# Criar máscara
+mask = cv2.inRange(hsv, lower_red, upper_red)
+
+# Aplicar máscara à imagem original
+result = cv2.bitwise_and(img, img, mask=mask)
+
+cv2.imshow('Resultado', result)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+```
+
+Teste com cores diferentes: verde, azul, amarelo.
+:::
+
+:::tip Exercício 2: Equalização de histograma
+Melhore o contraste de uma imagem escura ou com iluminação ruim.
+
+```python
+import cv2
+
+img = cv2.imread('sua_imagem.jpg', 0)  # Escala de cinza
+
+# Equalização simples
+eq = cv2.equalizeHist(img)
+
+# CLAHE (adaptativa local)
+clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+eq_clahe = clahe.apply(img)
+
+cv2.imshow('Original', img)
+cv2.imshow('Equalizado', eq)
+cv2.imshow('CLAHE', eq_clahe)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+```
+
+Compare os três resultados.
+:::
+
+:::tip Exercício 3: Rotação de Hue
+Mude todas as cores da imagem "girando" o eixo Hue. Vermelho vira verde, etc.
+
+```python
+import cv2
+import numpy as np
+
+img = cv2.imread('sua_imagem.jpg')
+hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+# Rotacionar Hue em 60 graus
+hsv[:, :, 0] = (hsv[:, :, 0] + 60) % 180  # % 180 porque OpenCV usa [0, 180]
+
+# Converter de volta para BGR
+result = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
+
+cv2.imshow('Original', img)
+cv2.imshow('Hue Rotacionado', result)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+```
+
+Experimente com diferentes valores (30, 90, 120, etc.).
+:::

@@ -51,6 +51,10 @@ export default defineConfig({
           label: 'Reinforcement learning',
           autogenerate: { directory: 'rl' }, collapsed: true
         },
+        {
+          label: 'Visão computacional',
+          autogenerate: { directory: 'cv' }, collapsed: true
+        },
       ],
     }),
   ],
