@@ -35,18 +35,6 @@ A amostragem pode introduzir dois efeitos importantes:
 * **Perda de detalhe** – detalhes pequenos demais para caber no grid são perdidos
 * **Aliasing** – padrões finos podem aparecer distorcidos ou produzir artefatos
 
-### 1.3 Exemplo manual de amostragem
-
-```python
-# Simular uma função contínua em apenas 8 valores
-def f(x):
-    return 100 * x
-
-# Amostrar nos pontos 0.0, 0.25, 0.5, 0.75
-samples = [f(x) for x in [0.0, 0.25, 0.5, 0.75]]
-print(samples)  # [0.0, 25.0, 50.0, 75.0]
-```
-
 ## 2. O que é quantização?
 
 A **quantização** converte valores contínuos em valores discretos dentro de um conjunto finito. Em imagens digitais, isso tipicamente significa mapear intensidades de pixel para um conjunto limitado de níveis de cinza.
@@ -70,19 +58,8 @@ Uma imagem digital é criada por dois passos principais:
 
 No mundo real, uma câmera converte a luz em eletricidade e depois transforma essa medida em números binários.
 
-### 3.1 Exemplo de quantização manual
 
-```python
-# Intensidades contínuas entre 0.0 e 1.0
-values = [0.1, 0.23, 0.58, 0.92]
-
-# Quantizar para 8 níveis
-levels = 8
-quantized = [int(v * (levels - 1)) for v in values]
-print(quantized)  # [0, 1, 4, 7]
-```
-
-### 3.2 Quantização uniforme
+### 3.1 Quantização uniforme
 
 A quantização uniforme divide o intervalo em fatias de mesmo tamanho. O valor de cada pixel é aproximado pelo centro do nível correspondente.
 
@@ -104,62 +81,4 @@ Quando a frequência do padrão na imagem é maior que a frequência de amostrag
 ### 4.2 Anti-aliasing
 
 A solução usual é aplicar um filtro de suavização antes da amostragem ou usar uma taxa de amostragem maior.
-
-## 5. Implementação direta sem bibliotecas
-
-### 5.1 Simular amostragem de uma imagem
-
-```python
-# Função que cria uma imagem 4x4 a partir de uma função contínua
-def sample_image(width, height, func):
-    image = []
-    for y in range(height):
-        row = []
-        for x in range(width):
-            u = x / (width - 1)
-            v = y / (height - 1)
-            row.append(func(u, v))
-        image.append(row)
-    return image
-
-# Exemplo de função contínua
-def checker(u, v):
-    return 1.0 if (int(u * 4) + int(v * 4)) % 2 == 0 else 0.0
-
-img = sample_image(4, 4, checker)
-for row in img:
-    print(row)
-```
-
-### 5.2 Simular quantização de intensidade
-
-```python
-# Quantizar imagem para 4 níveis
-def quantize_image(image, levels):
-    quantized = []
-    for row in image:
-        quantized_row = []
-        for value in row:
-            q = int(value * (levels - 1))
-            quantized_row.append(q)
-        quantized.append(quantized_row)
-    return quantized
-
-quantized = quantize_image(img, 4)
-for row in quantized:
-    print(row)
-```
-
-## 6. Amostragem de cor
-
-Na imagem RGB, cada canal de cor também é amostrado e quantizado separadamente. A combinação dos três canais forma o valor final de cada pixel.
-
-### 6.1 Exemplo manual de RGB
-
-```python
-pixel = [0.2, 0.7, 0.4]  # R, G, B em [0, 1]
-levels = 8
-quantized_pixel = [int(c * (levels - 1)) for c in pixel]
-print(quantized_pixel)  # [1, 5, 2]
-```
 
