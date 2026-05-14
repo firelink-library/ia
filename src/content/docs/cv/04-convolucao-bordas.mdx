@@ -1,0 +1,246 @@
+---
+sidebar:
+  order: 4
+slug: cv-filtros
+title: Convolução e detecção de bordas
+---
+
+# Convolução e detecção de bordas
+
+## 1. O que é convolução?
+
+A **convolução** é a operação matemática central de muitos filtros de imagem. Ela combina uma imagem com um pequeno kernel (ou máscara) para produzir uma nova imagem onde cada pixel é influenciado por seus vizinhos.
+O vídeo a seguir explica o que é a convolução e exemplifica com imagens.
+
+<iframe style="display:block;margin:auto;width:100%;height:50vh;" src="https://www.youtube.com/embed/KuXjwB4LzSA?start=551" frameborder="0" allowfullscreen></iframe>
+
+### 1.1 Definição básica
+
+Dada uma imagem `I` e um kernel `K` de tamanho `m × n`, a convolução calcula:
+
+```
+(I * K)[x, y] = Σ_i Σ_j I[x + i, y + j] · K[i, j]
+```
+
+Em visão computacional, o kernel desliza sobre a imagem, multiplicando cada pixel por um coeficiente e somando os resultados.
+
+### 1.2 Kernel
+
+O kernel define o comportamento do filtro:
+
+* **Suavização** – kernel com valores positivos somando 1
+* **Realce de borda** – kernel com soma zero e elementos positivos/negativos
+* **Detecção de borda** – kernel que calcula derivadas espaciais
+
+Um kernel 3×3 é o mais comum, mas existem kernels maiores como 5×5 ou 7×7.
+
+### 1.3 Padding e stride
+
+* **Padding** adiciona pixels extras nas bordas para manter o tamanho da imagem de saída.
+* **Stride** define o passo do kernel ao deslizar pela imagem.
+
+Com `padding=1` e `stride=1`, um kernel 3×3 aplicada sobre uma imagem `H×W` gera novamente uma saída `H×W`.
+
+## 2. Filtros comuns de convolução
+
+### 2.1 Filtro média (box blur)
+
+É um filtro suavizante onde todos os coeficientes são iguais.
+
+```
+1/9 * [1 1 1]
+      [1 1 1]
+      [1 1 1]
+```
+
+Substitui cada pixel pela média da vizinhança 3×3.
+
+### 2.2 Filtro Gaussiano
+
+Usa pesos gaussianos para dar mais importância aos pixels próximos ao centro.
+
+Exemplo 5×5 aproximado:
+```
+[ 1,  4,  7,  4, 1]
+[ 4, 16, 26, 16, 4]
+[ 7, 26, 41, 26, 7]
+[ 4, 16, 26, 16, 4]
+[ 1,  4,  7,  4, 1]
+```
+
+Normalizado pela soma dos coeficientes.
+
+### 2.3 Filtro de nitidez (sharpen)
+
+Realça detalhes subtraindo uma versão borrada da imagem.
+
+```
+[ 0 -1  0]
+[-1  5 -1]
+[ 0 -1  0]
+```
+
+### 2.4 Gradiente e detecção de borda
+
+Filtros de detecção de borda medem mudanças abruptas de intensidade.
+
+* **Sobel** – aproxima derivadas em X e Y
+* **Laplaciano** – segunda derivada, responde a bordas em todas as direções
+* **Scharr** – versão mais precisa do Sobel
+* **Roberts** – kernel 2×2 para bordas rápidas
+
+## 3. Detecção de bordas: por que é importante?
+
+Bordas representam mudanças de intensidade que delimitam objetos e formas na imagem. Detectar bordas é útil para:
+
+* segmentação
+* reconhecimento de objetos
+* análise de contornos
+* estimativa de profundidade
+
+## 4. Algoritmos de detecção de borda
+
+### 4.1 Sobel
+
+O operador **Sobel** calcula duas derivações, uma horizontal e outra vertical.
+
+```
+Sobel X:
+[-1 0 1]
+[-2 0 2]
+[-1 0 1]
+
+Sobel Y:
+[-1 -2 -1]
+[ 0  0  0]
+[ 1  2  1]
+```
+
+A magnitude do gradiente é:
+
+```
+G = sqrt(Gx^2 + Gy^2)
+```
+
+E a direção:
+
+```
+θ = atan2(Gy, Gx)
+```
+
+O Sobel é robusto contra ruído leve e é útil para extrair bordas principais.
+
+### 4.2 Canny
+
+O algoritmo **Canny** é mais sofisticado e segue quatro etapas:
+
+1. **Suavização** – aplica filtro Gaussiano
+2. **Gradiente** – calcula magnitude e direção do gradiente
+3. **Supressão não-máxima** – mantém apenas os picos locais na direção do gradiente
+4. **Histerese com dois limiares** – bordas fracas são preservadas somente se conectadas a bordas fortes
+
+Canny tende a entregar bordas mais finas e bem localizadas do que Sobel.
+
+### 4.3 Laplaciano
+
+O operador **Laplaciano** calcula a segunda derivada:
+
+```
+[ 0 -1  0]
+[-1  4 -1]
+[ 0 -1  0]
+```
+
+Ele detecta mudanças de intensidade em todas as direções, mas pode ser sensível ao ruído. Uma variante comum é o **Laplaciano de Gaussiano** (LoG), que suaviza antes de aplicar a segunda derivada.
+
+### 4.4 Scharr
+
+Scharr é uma variação do Sobel com melhor resposta rotacional e menos erro de aproximação.
+
+```
+Scharr X:
+[-3 0 3]
+[-10 0 10]
+[-3 0 3]
+
+Scharr Y:
+[-3 -10 -3]
+[ 0   0  0]
+[ 3  10  3]
+```
+
+## 5. Exemplos em OpenCV
+
+```python
+import cv2
+import numpy as np
+from matplotlib import pyplot as plt
+
+img = cv2.imread('sua_imagem.jpg', cv2.IMREAD_GRAYSCALE)
+
+# Convolução com kernel customizado
+kernel = np.array([
+    [0, -1, 0],
+    [-1, 5, -1],
+    [0, -1, 0]
+], dtype=np.float32)
+enhanced = cv2.filter2D(img, -1, kernel)
+
+# Sobel
+sobel_x = cv2.Sobel(img, cv2.CV_64F, 1, 0, ksize=3)
+sobel_y = cv2.Sobel(img, cv2.CV_64F, 0, 1, ksize=3)
+mag_sobel = np.sqrt(sobel_x**2 + sobel_y**2)
+mag_sobel = np.uint8(np.clip(mag_sobel, 0, 255))
+
+# Canny
+edges_canny = cv2.Canny(img, 100, 200)
+
+# Laplaciano
+laplacian = cv2.Laplacian(img, cv2.CV_64F)
+laplacian = np.uint8(np.absolute(laplacian))
+
+# Scharr
+scharr_x = cv2.Scharr(img, cv2.CV_64F, 1, 0)
+scharr_y = cv2.Scharr(img, cv2.CV_64F, 0, 1)
+mag_scharr = np.sqrt(scharr_x**2 + scharr_y**2)
+mag_scharr = np.uint8(np.clip(mag_scharr, 0, 255))
+
+fig, axes = plt.subplots(2, 3, figsize=(16, 10))
+axes[0, 0].imshow(img, cmap='gray'); axes[0, 0].set_title('Original'); axes[0, 0].axis('off')
+axes[0, 1].imshow(enhanced, cmap='gray'); axes[0, 1].set_title('Sharpen'); axes[0, 1].axis('off')
+axes[0, 2].imshow(mag_sobel, cmap='gray'); axes[0, 2].set_title('Sobel'); axes[0, 2].axis('off')
+axes[1, 0].imshow(edges_canny, cmap='gray'); axes[1, 0].set_title('Canny'); axes[1, 0].axis('off')
+axes[1, 1].imshow(laplacian, cmap='gray'); axes[1, 1].set_title('Laplacian'); axes[1, 1].axis('off')
+axes[1, 2].imshow(mag_scharr, cmap='gray'); axes[1, 2].set_title('Scharr'); axes[1, 2].axis('off')
+plt.tight_layout()
+plt.show()
+```
+
+## 6. Filtros morfológicos
+
+Filtros morfológicos são operações baseadas em forma que atuam sobre imagens binárias ou de escala de cinza. Em vez de multiplicar pixels por coeficientes, elas usam um **elemento estruturante** para examinar a vizinhança de cada pixel.
+
+* **Erosão** – remove pixels de primeiro plano; encolhe objetos claros e elimina ruído fino.
+* **Dilatação** – adiciona pixels de primeiro plano; expande objetos claros e preenche buracos pequenos.
+* **Abertura** – erosão seguida de dilatação; remove ruído pequeno sem alterar muito a forma dos objetos.
+* **Fechamento** – dilatação seguida de erosão; preenche pequenos buracos e conecta objetos próximos.
+
+Um elemento estruturante comum é a máscara 3×3 cheia de 1s:
+
+```
+[1 1 1]
+[1 1 1]
+[1 1 1]
+```
+
+Os filtros morfológicos são muito usados como pós-processamento da detecção de bordas e segmentação para limpar máscaras e melhorar contornos.
+
+
+Detecção de bordas e Transformações morfológicas: https://medium.com/turing-talks/detecção-de-bordas-e-transformações-morfológicas-em-imagens-com-opencv-8aecf8c8ba2f
+
+
+
+
+
+
+
